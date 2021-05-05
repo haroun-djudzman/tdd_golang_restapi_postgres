@@ -1,115 +1,91 @@
 package handlers_test
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/haroun-djudzman/restapi-postgres/handlers"
+	"github.com/haroun-djudzman/restapi-postgres/testingUtil"
 )
 
-type StubUserRetriever struct {
+type StubUserStore struct {
 	names map[int]string
 }
 
-func (s *StubUserRetriever) GetUserName(id int) string {
+func (s *StubUserStore) GetUserName(id int) string {
 	name := s.names[id]
 	return name
 }
 
-func (s *StubUserRetriever) CreateUserByName(name string) {
+func (s *StubUserStore) CreateUserByName(name string) {
 	id := len(s.names) + 1
 	s.names[id] = name
 }
 
 func TestGetUser(t *testing.T) {
-	retriever := StubUserRetriever{
+	store := StubUserStore{
 		map[int]string{
 			1: "Budi",
 			2: "Siti",
 		},
 	}
-	server := &handlers.UserServer{&retriever}
+	server := &handlers.UserServer{&store}
 
 	t.Run("get budi name by id", func(t *testing.T) {
-		request := newGetUserRequest(1)
+		request := testingUtil.NewGetUserRequest(1)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
-		assertStatus(t, response.Code, http.StatusOK)
+		testingUtil.AssertStatus(t, response.Code, http.StatusOK)
 		got := response.Body.String()
 		want := "Budi"
-		assertResponseBody(t, got, want)
+		testingUtil.AssertResponseBody(t, got, want)
 	})
 
 	t.Run("get siti name by id", func(t *testing.T) {
-		request := newGetUserRequest(2)
+		request := testingUtil.NewGetUserRequest(2)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
-		assertStatus(t, response.Code, http.StatusOK)
+		testingUtil.AssertStatus(t, response.Code, http.StatusOK)
 		got := response.Body.String()
 		want := "Siti"
-		assertResponseBody(t, got, want)
+		testingUtil.AssertResponseBody(t, got, want)
 	})
 
 	t.Run("returns 404 on missing user", func(t *testing.T) {
-		request := newGetUserRequest(3)
+		request := testingUtil.NewGetUserRequest(3)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
-		assertStatus(t, response.Code, http.StatusNotFound)
+		testingUtil.AssertStatus(t, response.Code, http.StatusNotFound)
 	})
 }
 
 func TestCreateUser(t *testing.T) {
-	retriever := StubUserRetriever{
+	store := StubUserStore{
 		map[int]string{},
 	}
-	server := &handlers.UserServer{&retriever}
+	server := &handlers.UserServer{&store}
 
 	t.Run("create new user on POST", func(t *testing.T) {
 		name := "Anto"
-		request := newCreateUserRequest(name)
+		request := testingUtil.NewCreateUserRequest(name)
+
 		response := httptest.NewRecorder()
-
 		server.ServeHTTP(response, request)
-		assertStatus(t, response.Code, http.StatusAccepted)
+		testingUtil.AssertStatus(t, response.Code, http.StatusAccepted)
 
-		if len(retriever.names) != 1 {
-			t.Errorf("no new user is inserted, %d user in database", len(retriever.names))
+		if len(store.names) != 1 {
+			t.Errorf("no new user is inserted, %d user in database", len(store.names))
 		}
 
-		if retriever.names[1] != name {
-			t.Errorf("created wrong user, got %q want %q", retriever.names[1], name)
+		if store.names[1] != name {
+			t.Errorf("created wrong user, got %q want %q", store.names[1], name)
 		}
 	})
-}
-
-func newGetUserRequest(id int) *http.Request {
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/user/%d", id), nil)
-	return req
-}
-
-func newCreateUserRequest(name string) *http.Request {
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/%s", name), nil)
-	return req
-}
-
-func assertResponseBody(t testing.TB, got, want string) {
-	t.Helper()
-	if got != want {
-		t.Errorf("response body is wrong, got %q want %q", got, want)
-	}
-}
-
-func assertStatus(t testing.TB, got, want int) {
-	t.Helper()
-	if got != want {
-		t.Errorf("incorrect status, got %d want %d", got, want)
-	}
 }
