@@ -19,19 +19,16 @@ type UserServer struct {
 func (u *UserServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/api/user/"))
 	if err != nil {
-		log.Fatalf("Unable to convert the string into int.  %v", err)
+		log.Printf("Unable to convert the string into int.  %v", err)
+		w.WriteHeader(http.StatusNotAcceptable)
+		return
 	}
 
-	fmt.Fprint(w, u.Retriever.GetUserName(id))
+	name := u.Retriever.GetUserName(id)
+
+	if name == "" {
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	fmt.Fprint(w, name)
 }
-
-// func getUserName(id int) string {
-// 	if id == 1 {
-// 		return "Budi"
-// 	}
-
-// 	if id == 2 {
-// 		return "Siti"
-// 	}
-// 	return ""
-// }

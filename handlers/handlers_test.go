@@ -33,6 +33,7 @@ func TestGetUser(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
+		assertStatus(t, response.Code, http.StatusOK)
 		got := response.Body.String()
 		want := "Budi"
 		assertResponseBody(t, got, want)
@@ -44,9 +45,19 @@ func TestGetUser(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
+		assertStatus(t, response.Code, http.StatusOK)
 		got := response.Body.String()
 		want := "Siti"
 		assertResponseBody(t, got, want)
+	})
+
+	t.Run("returns 404 on missing user", func(t *testing.T) {
+		request := newGetUserRequest(3)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assertStatus(t, response.Code, http.StatusNotFound)
 	})
 }
 
@@ -59,5 +70,12 @@ func assertResponseBody(t testing.TB, got, want string) {
 	t.Helper()
 	if got != want {
 		t.Errorf("response body is wrong, got %q want %q", got, want)
+	}
+}
+
+func assertStatus(t testing.TB, got, want int) {
+	t.Helper()
+	if got != want {
+		t.Errorf("incorrect status, got %d want %d", got, want)
 	}
 }
