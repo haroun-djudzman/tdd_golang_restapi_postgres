@@ -9,33 +9,44 @@ import (
 	"github.com/haroun-djudzman/restapi-postgres/handlers"
 )
 
+type StubUserRetriever struct {
+	names map[int]string
+}
+
+func (s *StubUserRetriever) GetUserName(id int) string {
+	name := s.names[id]
+	return name
+}
+
 func TestGetUser(t *testing.T) {
+	retriever := StubUserRetriever{
+		map[int]string{
+			1: "Budi",
+			2: "Siti",
+		},
+	}
+	server := &handlers.UserServer{&retriever}
+
 	t.Run("get budi name by id", func(t *testing.T) {
 		request := newGetUserRequest(1)
 		response := httptest.NewRecorder()
 
-		handlers.UserServer(response, request)
+		server.ServeHTTP(response, request)
 
 		got := response.Body.String()
 		want := "Budi"
-
-		if got != want {
-			t.Errorf("got %q, want %q", got, want)
-		}
+		assertResponseBody(t, got, want)
 	})
 
 	t.Run("get siti name by id", func(t *testing.T) {
 		request := newGetUserRequest(2)
 		response := httptest.NewRecorder()
 
-		handlers.UserServer(response, request)
+		server.ServeHTTP(response, request)
 
 		got := response.Body.String()
 		want := "Siti"
-
-		if got != want {
-			t.Errorf("got %q, want %q", got, want)
-		}
+		assertResponseBody(t, got, want)
 	})
 }
 
