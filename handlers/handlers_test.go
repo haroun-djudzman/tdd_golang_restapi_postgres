@@ -18,6 +18,11 @@ func (s *StubUserRetriever) GetUserName(id int) string {
 	return name
 }
 
+func (s *StubUserRetriever) CreateUserByName(name string) {
+	id := len(s.names) + 1
+	s.names[id] = name
+}
+
 func TestGetUser(t *testing.T) {
 	retriever := StubUserRetriever{
 		map[int]string{
@@ -61,8 +66,37 @@ func TestGetUser(t *testing.T) {
 	})
 }
 
+func TestCreateUser(t *testing.T) {
+	retriever := StubUserRetriever{
+		map[int]string{},
+	}
+	server := &handlers.UserServer{&retriever}
+
+	t.Run("create new user on POST", func(t *testing.T) {
+		name := "Anto"
+		request := newCreateUserRequest(name)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+		assertStatus(t, response.Code, http.StatusAccepted)
+
+		if len(retriever.names) != 1 {
+			t.Errorf("no new user is inserted, %d user in database", len(retriever.names))
+		}
+
+		if retriever.names[1] != name {
+			t.Errorf("created wrong user, got %q want %q", retriever.names[1], name)
+		}
+	})
+}
+
 func newGetUserRequest(id int) *http.Request {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/user/%d", id), nil)
+	return req
+}
+
+func newCreateUserRequest(name string) *http.Request {
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/%s", name), nil)
 	return req
 }
 

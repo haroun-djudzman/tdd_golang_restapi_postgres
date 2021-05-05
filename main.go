@@ -14,6 +14,10 @@ func (i *InMemoryUserRetriever) GetUserName(id int) string {
 	return "John Doe"
 }
 
+func (i *InMemoryUserRetriever) CreateUserByName(name string) {
+
+}
+
 func main() {
 	server := &handlers.UserServer{Retriever: &InMemoryUserRetriever{}}
 	log.Fatal(http.ListenAndServe(":8081", server))
