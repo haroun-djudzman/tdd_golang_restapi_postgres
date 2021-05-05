@@ -7,18 +7,7 @@ import (
 	"github.com/haroun-djudzman/restapi-postgres/handlers"
 )
 
-type InMemoryUserRetriever struct {
-}
-
-func (i *InMemoryUserRetriever) GetUserName(id int) string {
-	return "John Doe"
-}
-
-func (i *InMemoryUserRetriever) CreateUserByName(name string) {
-
-}
-
 func main() {
-	server := &handlers.UserServer{Retriever: &InMemoryUserRetriever{}}
+	server := &handlers.UserServer{Retriever: NewInMemoryUserStore()}
 	log.Fatal(http.ListenAndServe(":8081", server))
 }
